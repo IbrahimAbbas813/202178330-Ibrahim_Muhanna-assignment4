@@ -1,8 +1,74 @@
 // =========================
-// Theme Toggle + localStorage
+// STATS TRACKING - Track portfolio interactions
+// =========================
+let stats = JSON.parse(localStorage.getItem("portfolioStats")) || {
+  visitorSessions: 0,
+  lastVisit: new Date().toISOString()
+};
+
+// Increment visitor sessions on first load
+if (!sessionStorage.getItem("sessionStarted")) {
+  stats.visitorSessions++;
+  stats.lastVisit = new Date().toISOString();
+  localStorage.setItem("portfolioStats", JSON.stringify(stats));
+  sessionStorage.setItem("sessionStarted", "true");
+}
+
+// Update visitor count in stats
+function updateStats() {
+  const visitorsCount = document.getElementById("visitorsCount");
+  if (visitorsCount) {
+    visitorsCount.textContent = stats.visitorSessions;
+  }
+
+  const favoritesCount = document.getElementById("favoritesCount");
+  if (favoritesCount) {
+    favoritesCount.textContent = favorites.length;
+  }
+}
+
+// =========================
+// KEYBOARD SHORTCUTS
+// =========================
+document.addEventListener("keydown", (e) => {
+  // Ctrl/Cmd + K for search focus
+  if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    e.preventDefault();
+    const searchInput = document.getElementById("projectSearch");
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  }
+
+  // Ctrl/Cmd + / for help
+  if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+    e.preventDefault();
+    showKeyboardHelp();
+  }
+
+  // T for theme toggle
+  if (e.key === "t" && !["input", "textarea"].includes(document.activeElement.tagName.toLowerCase())) {
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) themeToggle.click();
+  }
+});
+
+// Show keyboard shortcuts help
+function showKeyboardHelp() {
+  const message = `⌨️ Keyboard Shortcuts:
+Ctrl+K (or Cmd+K) - Focus search
+T - Toggle theme
+Ctrl+/ (or Cmd+/) - Show this help`;
+  alert(message);
+}
+
+// =========================
+// Theme Toggle + localStorage + System Preference
 // =========================
 const themeToggleBtn = document.getElementById("themeToggle");
 const savedTheme = localStorage.getItem("theme");
+
 
 function updateThemeButton() {
   if (!themeToggleBtn) return;
@@ -11,10 +77,30 @@ function updateThemeButton() {
     : "Dark Mode";
 }
 
-if (savedTheme === "dark") {
+// Check for system preference if no saved theme
+if (!savedTheme) {
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (prefersDark) {
+    document.body.classList.add("dark");
+  }
+} else if (savedTheme === "dark") {
   document.body.classList.add("dark");
 }
+
 updateThemeButton();
+
+// Listen for system theme changes
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  if (!localStorage.getItem("theme")) {
+    // Only auto-switch if user hasn't manually set a preference
+    if (e.matches) {
+      document.body.classList.add("dark");
+    } else {
+      document.body.classList.remove("dark");
+    }
+    updateThemeButton();
+  }
+});
 
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener("click", () => {
@@ -143,6 +229,7 @@ function initFavoriteButtons() {
 updateFavoritesCount();
 updateFavoritedButtons();
 initFavoriteButtons();
+updateStats(); // Track portfolio stats
 
 // =========================
 // ADVANCED FILTERING & SORTING
@@ -160,6 +247,9 @@ const projectFeedback = document.getElementById("projectFeedback");
 let activeSkillLevel = "all";
 let activeCategory = "all";
 let activeSort = "name";
+
+// Track project views
+let projectViews = JSON.parse(localStorage.getItem("projectViews")) || {};
 
 // Sort projects array based on active sort option
 function sortProjects(cardsArray) {
@@ -182,6 +272,13 @@ function sortProjects(cardsArray) {
   }
 
   return sorted;
+}
+
+// Highlight search term in text
+function highlightSearch(text, searchTerm) {
+  if (!searchTerm) return text;
+  const regex = new RegExp(`(${searchTerm})`, "gi");
+  return text.replace(regex, "<mark>$1</mark>");
 }
 
 // Main filter function - combines all filter conditions
@@ -274,9 +371,13 @@ setupButtonListener(filterButtons, (btn) => {
   activeCategory = btn.dataset.filter;
 });
 
-// Search input listener
+// Search input listener with debouncing
 if (projectSearchInput) {
-  projectSearchInput.addEventListener("input", filterProjects);
+  let searchTimeout;
+  projectSearchInput.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(filterProjects, 200);
+  });
 }
 
 // Sort select listener
@@ -288,6 +389,15 @@ if (sortSelect) {
 }
 
 filterProjects();
+
+// Track project views on hover
+projectCards.forEach((card) => {
+  card.addEventListener("mouseenter", () => {
+    const projectId = card.dataset.projectId;
+    projectViews[projectId] = (projectViews[projectId] || 0) + 1;
+    localStorage.setItem("projectViews", JSON.stringify(projectViews));
+  });
+});
 
 // =========================
 // Contact Form Validation + Feedback
@@ -348,12 +458,50 @@ if (contactForm) {
 }
 
 // =========================
-// Footer Year
+// Copy Email to Clipboard
 // =========================
-const yearSpan = document.getElementById("year");
-if (yearSpan) {
-  yearSpan.textContent = new Date().getFullYear();
+const copyEmailBtn = document.getElementById("copyEmailBtn");
+if (copyEmailBtn) {
+  copyEmailBtn.addEventListener("click", () => {
+    const email = "s202178330@kfupm.edu.sa";
+    navigator.clipboard.writeText(email).then(() => {
+      copyEmailBtn.classList.add("copied");
+      copyEmailBtn.textContent = "✓ Copied!";
+
+      setTimeout(() => {
+        copyEmailBtn.classList.remove("copied");
+        copyEmailBtn.textContent = "📋 Copy";
+      }, 2000);
+    }).catch(() => {
+      copyEmailBtn.textContent = "Failed to copy";
+    });
+  });
 }
+
+// =========================
+// Scroll to Top Button
+// =========================
+const scrollToTopBtn = document.getElementById("scrollToTop");
+
+window.addEventListener("scroll", () => {
+  if (window.scrollY > 300) {
+    scrollToTopBtn.classList.add("visible");
+  } else {
+    scrollToTopBtn.classList.remove("visible");
+  }
+});
+
+if (scrollToTopBtn) {
+  scrollToTopBtn.addEventListener("click", () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  });
+}
+
+// =========================
+
 
 // =========================
 // Reveal-on-scroll animation
@@ -389,17 +537,36 @@ const errorMessage = document.getElementById("errorMessage");
 async function fetchGitHubRepos() {
   try {
     // Fetch user's repositories sorted by update date, limit to 6
-    const response = await fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=6`);
+    const response = await fetch(
+      `https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=6`,
+      {
+        headers: {
+          "Accept": "application/vnd.github.v3+json"
+        }
+      }
+    );
+
+    // Check rate limit headers
+    const rateLimit = response.headers.get("X-RateLimit-Remaining");
+    if (rateLimit && parseInt(rateLimit) < 5) {
+      console.warn("⚠️ GitHub API rate limit approaching:", rateLimit);
+    }
 
     // Handle HTTP errors
     if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
+      if (response.status === 404) {
+        throw new Error("GitHub user not found. Please check the username.");
+      } else if (response.status === 403) {
+        throw new Error("GitHub API rate limit exceeded. Please try again later.");
+      } else {
+        throw new Error(`API responded with status ${response.status}`);
+      }
     }
 
     const repos = await response.json();
 
     // Check if repositories found
-    if (repos.length === 0) {
+    if (!Array.isArray(repos) || repos.length === 0) {
       errorMessage.textContent = "No public repositories found.";
       errorState.hidden = false;
       loadingState.hidden = true;
@@ -419,15 +586,17 @@ async function fetchGitHubRepos() {
       repoCard.className = "github-repo-card";
 
       const description = repo.description || "No description available";
+      const stars = repo.stargazers_count || 0;
+      const forks = repo.forks_count || 0;
 
       // Build card HTML with repo information
       const infoHTML = `
-        <h3>${repo.name}</h3>
-        <p>${description}</p>
+        <h3>${escapeHtml(repo.name)}</h3>
+        <p>${escapeHtml(description)}</p>
         <div class="github-repo-info">
-          ${repo.language ? `<span class="github-repo-stat">📝 ${repo.language}</span>` : ""}
-          <span class="github-repo-stat">⭐ ${repo.stargazers_count}</span>
-          ${repo.forks_count > 0 ? `<span class="github-repo-stat">🍴 ${repo.forks_count}</span>` : ""}
+          ${repo.language ? `<span class="github-repo-stat">📝 ${escapeHtml(repo.language)}</span>` : ""}
+          <span class="github-repo-stat">⭐ ${stars}</span>
+          ${forks > 0 ? `<span class="github-repo-stat">🍴 ${forks}</span>` : ""}
         </div>
       `;
 
@@ -439,9 +608,20 @@ async function fetchGitHubRepos() {
     loadingState.hidden = true;
     errorState.hidden = false;
     errorMessage.textContent = `Failed to load repositories: ${error.message}. Please check your internet connection or try again later.`;
-    console.error("GitHub API Error:", error);
+    console.error("❌ GitHub API Error:", error);
   }
 }
 
-// Execute on page load
-fetchGitHubRepos();
+// Helper function to escape HTML and prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Execute on page load with error handling
+try {
+  fetchGitHubRepos();
+} catch (error) {
+  console.error("Failed to initialize GitHub repos:", error);
+}

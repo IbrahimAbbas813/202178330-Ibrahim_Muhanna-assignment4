@@ -73,6 +73,25 @@
             </div>
           </div>
         </div>
+
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-number" id="projectCount">3</div>
+            <div class="stat-label">Projects Created</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="favoritesCount">0</div>
+            <div class="stat-label">Favorites Added</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="skillsCount">3</div>
+            <div class="stat-label">Skill Levels</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="visitorsCount">1</div>
+            <div class="stat-label">Visitor Sessions</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -215,10 +234,15 @@
       <div class="container">
         <h2>Contact</h2>
 
-        <p>
-          Email:
-          <a href="mailto:s202178330@kfupm.edu.sa">s202178330@kfupm.edu.sa</a>
-        </p>
+        <div class="contact-info">
+          <p>
+            Email:
+            <a href="mailto:s202178330@kfupm.edu.sa" id="emailLink" class="email-link">
+              s202178330@kfupm.edu.sa
+            </a>
+            <button id="copyEmailBtn" type="button" class="copy-btn" title="Copy email to clipboard" aria-label="Copy email">📋 Copy</button>
+          </p>
+        </div>
 
         <form id="contactForm" class="contact-form" novalidate>
           <div class="form-group">
@@ -248,6 +272,7 @@
 
   <footer>
     <div class="container">
+      <button id="scrollToTop" type="button" class="scroll-to-top" aria-label="Scroll to top" title="Back to top">↑</button>
       <p>&copy; <span id="year"></span> Ibrahim Abbas Almuhanna. All rights reserved.</p>
     </div>
   </footer>
