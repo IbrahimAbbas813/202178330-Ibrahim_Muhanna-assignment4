@@ -296,6 +296,8 @@ function filterProjects() {
   const existingProjectIds = Array.from(currentProjectCards).map(card => card.dataset.projectId);
   favorites = favorites.filter(id => existingProjectIds.includes(id));
 
+  console.log("Filtering with - Skill Level:", activeSkillLevel, "Category:", activeCategory);
+
   // Check each project against all active filters
   currentProjectCards.forEach((card) => {
     const title = card.dataset.title.toLowerCase();
@@ -322,26 +324,28 @@ function filterProjects() {
     // Include card if all filters match
     if (matchesSkillLevel && matchesCategory && matchesSearch) {
       visibleCards.push(card);
+      console.log("Project matched:", title, "- Skill:", skillLevel, "Matches skill level:", matchesSkillLevel);
     }
   });
 
   // Sort the filtered results
   const sortedCards = sortProjects(visibleCards);
 
-  // Reorder cards in DOM - hide all first, then append sorted ones
-  const projectsGrid = document.getElementById("projectsGrid");
-  projectsGrid.innerHTML = ""; // Clear the grid
+  console.log("Visible cards count:", sortedCards.length);
 
-  // Re-add cards in sorted order
-  sortedCards.forEach((card) => {
-    projectsGrid.appendChild(card);
+  // Simply show/hide cards - don't manipulate DOM structure
+  currentProjectCards.forEach((card) => {
+    if (visibleCards.includes(card)) {
+      card.style.display = ""; // Show visible cards
+    } else {
+      card.style.display = "none"; // Hide non-matching cards
+    }
   });
 
-  // Hide cards that don't match filters
-  currentProjectCards.forEach((card) => {
-    if (!visibleCards.includes(card)) {
-      card.style.display = "none";
-    }
+  // Reorder visible cards in DOM by re-inserting them
+  const projectsGrid = document.getElementById("projectsGrid");
+  sortedCards.forEach((card) => {
+    projectsGrid.appendChild(card); // Move to end in sorted order
   });
 
   // Show/hide empty state message
@@ -368,6 +372,7 @@ function setupButtonListener(buttons, getProperty) {
       buttons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
       getProperty(button);
+      console.log("Filter changed:", button.dataset);
       filterProjects();
     });
   });
@@ -375,10 +380,12 @@ function setupButtonListener(buttons, getProperty) {
 
 setupButtonListener(skillButtons, (btn) => {
   activeSkillLevel = btn.dataset.skill;
+  console.log("Active skill level set to:", activeSkillLevel);
 });
 
 setupButtonListener(filterButtons, (btn) => {
   activeCategory = btn.dataset.filter;
+  console.log("Active category set to:", activeCategory);
 });
 
 // Search input listener with debouncing
