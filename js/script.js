@@ -172,6 +172,10 @@ let favorites = JSON.parse(localStorage.getItem("projectFavorites")) || [];
 
 // Save favorites array to localStorage for persistence across sessions
 function saveFavorites() {
+  // Clean up any favorites that reference deleted projects before saving
+  const existingProjectIds = Array.from(document.querySelectorAll(".project-card")).map(card => card.dataset.projectId);
+  favorites = favorites.filter(id => existingProjectIds.includes(id));
+
   localStorage.setItem("projectFavorites", JSON.stringify(favorites));
   updateFavoritesCount();
 }
@@ -239,7 +243,6 @@ const projectSearchInput = document.getElementById("projectSearch");
 const skillButtons = document.querySelectorAll(".skill-btn");
 const filterButtons = document.querySelectorAll(".filter-btn");
 const sortSelect = document.getElementById("sortSelect");
-const projectCards = document.querySelectorAll(".project-card");
 const emptyProjectsMessage = document.getElementById("emptyProjectsMessage");
 const projectFeedback = document.getElementById("projectFeedback");
 
@@ -286,8 +289,15 @@ function filterProjects() {
   const searchText = projectSearchInput.value.trim().toLowerCase();
   const visibleCards = [];
 
+  // Re-query all project cards from the DOM (handles dynamically deleted projects)
+  const currentProjectCards = document.querySelectorAll(".project-card");
+
+  // Clean up favorites array - remove IDs of deleted projects
+  const existingProjectIds = Array.from(currentProjectCards).map(card => card.dataset.projectId);
+  favorites = favorites.filter(id => existingProjectIds.includes(id));
+
   // Check each project against all active filters
-  projectCards.forEach((card) => {
+  currentProjectCards.forEach((card) => {
     const title = card.dataset.title.toLowerCase();
     const categories = card.dataset.category.toLowerCase();
     const keywords = card.dataset.keywords.toLowerCase();
@@ -328,7 +338,7 @@ function filterProjects() {
   });
 
   // Hide cards that don't match filters
-  projectCards.forEach((card) => {
+  currentProjectCards.forEach((card) => {
     if (!visibleCards.includes(card)) {
       card.style.display = "none";
     }
@@ -391,13 +401,17 @@ if (sortSelect) {
 filterProjects();
 
 // Track project views on hover
-projectCards.forEach((card) => {
-  card.addEventListener("mouseenter", () => {
-    const projectId = card.dataset.projectId;
-    projectViews[projectId] = (projectViews[projectId] || 0) + 1;
-    localStorage.setItem("projectViews", JSON.stringify(projectViews));
+function attachViewTracking() {
+  document.querySelectorAll(".project-card").forEach((card) => {
+    card.addEventListener("mouseenter", () => {
+      const projectId = card.dataset.projectId;
+      projectViews[projectId] = (projectViews[projectId] || 0) + 1;
+      localStorage.setItem("projectViews", JSON.stringify(projectViews));
+    });
   });
-});
+}
+
+attachViewTracking();
 
 // =========================
 // Contact Form Validation + Feedback
